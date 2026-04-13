@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="theme-color" content="#222222">
+  <title>Make Choice Fate</title>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #000;
+      color: white;
+      font-family: monospace;
+      height: 100vh;
+      overflow: hidden;
+      cursor: text;
+    }
+
+    #canvas {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      padding: 120px 40px;
+    }
+
+    .letter {
+      height: 80px;
+    }
+
+    .letter img {
+      height: 100%;
+      display: block;
+    }
+
+    .space {
+      width: 30px;
+      height: 80px;
+    }
+
+    .newline {
+      width: 100%;
+      height: 0;
+    }
+
+    /* 👇 깜빡이는 커서 */
+    .caret {
+      width: 2px;
+      height: 80px;
+      background: white;
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    /* 👇 hint는 은은하게 고정 */
+    .hint {
+      height: 80px;
+      line-height: 80px;
+      margin-left: 8px;
+      font-size: 40px;
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+  </style>
+</head>
+
+<body>
+  <div id="canvas">
+    <span class="caret"></span>
+    <span class="hint">type here</span>
+  </div>
+
+<script>
+  const canvas = document.getElementById('canvas');
+  const IMG_PATH = 'images/';
+
+  function hideHint() {
+    const hint = canvas.querySelector('.hint');
+    if (hint) hint.remove();
+  }
+
+  function showHint() {
+    if (!canvas.querySelector('.hint')) {
+      const h = document.createElement('span');
+      h.className = 'hint';
+      h.textContent = 'type here';
+      canvas.appendChild(h);
+    }
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+    const caret = canvas.querySelector('.caret');
+
+    // backspace
+    if (e.key === 'Backspace') {
+      e.preventDefault();
+      const prev = caret.previousElementSibling;
+      if (prev && !prev.classList.contains('hint')) prev.remove();
+
+      const hasContent = [...canvas.children].some(
+        el => !el.classList.contains('caret') && !el.classList.contains('hint')
+      );
+
+      if (!hasContent) showHint();
+      return;
+    }
+
+    // enter
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      hideHint();
+
+      const br = document.createElement('div');
+      br.className = 'newline';
+      canvas.insertBefore(br, caret);
+      return;
+    }
+
+    // space
+    if (e.key === ' ') {
+      e.preventDefault();
+      hideHint();
+
+      const sp = document.createElement('span');
+      sp.className = 'space';
+      canvas.insertBefore(sp, caret);
+      return;
+    }
+
+    // letters
+    if (e.key.length === 1 && /[a-zA-Z0-9]/.test(e.key)) {
+      e.preventDefault();
+      hideHint();
+
+      const span = document.createElement('span');
+      span.className = 'letter';
+
+      const img = document.createElement('img');
+      img.src = IMG_PATH + e.key.toLowerCase() + '.png';
+
+      span.appendChild(img);
+      canvas.insertBefore(span, caret);
+    }
+  });
+</script>
+
+</body>
+</html>
