@@ -12,25 +12,19 @@ body {
   overflow: hidden;
   cursor: text;
 }
-
 #canvas {
+  position: relative;
   width: 100%;
   height: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  align-content: flex-start;
   padding: 120px 40px;
-  row-gap: 20px; 
 }
 
-/* 글자 이미지 */
 .letter {
-  height: 70px;
-  margin-right: 6px;
+  position: absolute;
+  transform-origin: center;
 }
 
 .letter img {
-  height: 100%;
   display: block;
 }
 
