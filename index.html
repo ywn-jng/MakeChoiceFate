@@ -3,92 +3,132 @@
 <head>
   <meta name="theme-color" content="#222222">
   <title>Make Choice Fate</title>
-  <link rel="stylesheet" href="style.css">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     body {
-      background: #000;
+      background-color: #222222;
       color: white;
       font-family: monospace;
       height: 100vh;
       overflow: hidden;
       cursor: text;
     }
+    .home-button {
+      position: fixed; top: 40px; left: 40px; background: none; border: none;
+      color: white; font-family: monospace; font-size: 36px;
+      cursor: pointer; text-decoration: none; z-index: 3000;
+    }
+    .top-right-buttons {
+      position: fixed; top: 40px; right: 50px; display: flex;
+      gap: 40px; align-items: center; z-index: 3000;
+    }
+    .icon-button { display: block; }
+    .icon-button img { width: 35px; height: 35px; object-fit: contain; }
+    .icon-button img[alt="Email"] { width: 40px; height: 40px; }
 
     #canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
       display: flex;
       flex-wrap: wrap;
+      flex-direction: row;
       align-content: flex-start;
-      padding: 120px 40px;
+      align-items: flex-start;
+      padding: 120px 40px 40px 40px;
     }
 
-    .letter {
+    #canvas .letter {
       height: 80px;
+      flex: 0 0 auto;
+      display: inline-block;
+      position: relative;
+      vertical-align: top;
     }
 
-    .letter img {
+    #canvas .letter img {
       height: 100%;
+      width: auto;
       display: block;
     }
 
-    .space {
-      width: 30px;
+    #canvas .space {
+      flex: 0 0 auto;
       height: 80px;
+      display: inline-block;
+      vertical-align: top;
     }
 
-    .newline {
-      width: 100%;
+    #canvas .newline {
+      flex-basis: 100%;
+      width: 0;
       height: 0;
+      overflow: hidden;
     }
 
-    /* 👇 깜빡이는 커서 */
     .caret {
+      display: inline-block;
+      flex: 0 0 auto;
       width: 2px;
       height: 80px;
       background: white;
       animation: blink 1s step-end infinite;
+      vertical-align: top;
+      position: relative;
+      z-index: 2500;
     }
 
     @keyframes blink {
       50% { opacity: 0; }
     }
 
-    /* 👇 hint는 은은하게 고정 */
     .hint {
+      display: inline-block;
       height: 80px;
       line-height: 80px;
       margin-left: 8px;
       font-size: 40px;
-      opacity: 0.3;
+      color: white;
+      opacity: 0.6;
       pointer-events: none;
+      transition: opacity 0.5s;
+      vertical-align: top;
     }
-
   </style>
 </head>
-
 <body>
-  <div id="canvas">
-    <span class="hint">type here</span>
-  </div>
+  <div id="canvas"><span class="caret"></span><span class="hint">type here</span></div>
 
 <script>
   const canvas = document.getElementById('canvas');
   const IMG_PATH = 'images/';
 
-  function hideHint() {
-    const hint = canvas.querySelector('.hint');
-    if (hint) hint.remove();
-  }
-
-  function showHint() {
-    if (!canvas.querySelector('.hint')) {
-      const h = document.createElement('span');
-      h.className = 'hint';
-      h.textContent = 'type here';
-      canvas.appendChild(h);
+  /** Sequential flow, but each glyph gets random scale/rotation and irregular spacing so they can collide. */
+  function chaosGlyphStyles(el, kind) {
+    if (kind === 'newline') {
+      el.style.marginTop = `${(Math.random() - 0.5) * 24}px`;
+      return;
+    }
+    const rot = (Math.random() - 0.5) * 88;
+    const sc = kind === 'letter' ? 0.52 + Math.random() * 1.05 : 1;
+    const ml = (Math.random() - 0.5) * 42 - (kind === 'letter' ? 4 : 0);
+    const mt = (Math.random() - 0.5) * 36;
+    const z = 1 + Math.floor(Math.random() * 220);
+    el.style.position = 'relative';
+    el.style.zIndex = String(z);
+    el.style.marginLeft = `${ml}px`;
+    el.style.marginTop = `${mt}px`;
+    if (kind === 'space') {
+      el.style.marginRight = `${(Math.random() - 0.5) * 18}px`;
+    }
+    if (kind === 'letter') {
+      el.style.transform = `rotate(${rot}deg) scale(${sc})`;
+      el.style.transformOrigin = '50% 88%';
+    } else if (kind === 'space') {
+      el.style.transform = `translateY(${(Math.random() - 0.5) * 22}px) rotate(${(Math.random() - 0.5) * 24}deg)`;
+      el.style.transformOrigin = '50% 50%';
     }
   }
 
@@ -97,58 +137,68 @@
 
     const caret = canvas.querySelector('.caret');
 
-    // backspace
+    function hideHint() {
+      const h = canvas.querySelector('.hint');
+      if (h) h.remove();
+    }
+
+    function showHint() {
+      if (!canvas.querySelector('.hint')) {
+        const h = document.createElement('span');
+        h.className = 'hint';
+        h.textContent = 'type here';
+        caret.after(h);
+      }
+    }
+
     if (e.key === 'Backspace') {
       e.preventDefault();
       const prev = caret.previousElementSibling;
-      if (prev && !prev.classList.contains('hint')) prev.remove();
-
-      const hasContent = [...canvas.children].some(
+      if (prev) prev.remove();
+      const hasContent = Array.from(canvas.children).some(
         el => !el.classList.contains('caret') && !el.classList.contains('hint')
       );
-
       if (!hasContent) showHint();
       return;
     }
 
-    // enter
     if (e.key === 'Enter') {
       e.preventDefault();
       hideHint();
-
       const br = document.createElement('div');
       br.className = 'newline';
+      chaosGlyphStyles(br, 'newline');
       canvas.insertBefore(br, caret);
       return;
     }
 
-    // space
     if (e.key === ' ') {
       e.preventDefault();
       hideHint();
-
       const sp = document.createElement('span');
       sp.className = 'space';
+      const w = 2 + Math.random() * 52;
+      sp.style.width = `${w}px`;
+      chaosGlyphStyles(sp, 'space');
       canvas.insertBefore(sp, caret);
       return;
     }
 
-    // letters
     if (e.key.length === 1 && /[a-zA-Z0-9]/.test(e.key)) {
       e.preventDefault();
       hideHint();
-
       const span = document.createElement('span');
       span.className = 'letter';
-
       const img = document.createElement('img');
       img.src = IMG_PATH + e.key.toLowerCase() + '.png';
-
+      img.alt = e.key;
       span.appendChild(img);
+      chaosGlyphStyles(span, 'letter');
       canvas.insertBefore(span, caret);
     }
   });
+
+  document.querySelector('.home-button').addEventListener('keydown', (e) => e.stopPropagation());
 </script>
-<script src="sketch.js"></script>
 </body>
 </html>
